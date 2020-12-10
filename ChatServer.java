@@ -5,8 +5,7 @@ import java.nio.channels.*;
 import java.nio.charset.*;
 import java.util.*;
 
-public class ChatServer
-{
+public class ChatServer{
   // A pre-allocated buffer for the received data
   static private final ByteBuffer buffer = ByteBuffer.allocate( 16384 );
 
@@ -184,6 +183,10 @@ public class ChatServer
               return true;
             case "/join":
               if(words.length == 2){
+                if(words[1].equals(users.get(sc).getRoom())){
+                  message_user("ERROR",sc);
+                  return true;
+                }
                 if(users.get(sc).getState().equals("init")){
                   message_user("ERROR", sc);
                 }
@@ -205,7 +208,7 @@ public class ChatServer
               }
               return true;
             case "/leave":
-              if(words.length == 2){
+              if(words.length == 1){
                 if(users.get(sc).getState().equals("inside")){
                   users.get(sc).setState("outside");
                   String Leaving_Room = users.get(sc).getRoom();
@@ -222,11 +225,28 @@ public class ChatServer
               }
               return true;
             case "/bye":
-              message_user("BYE",sc);
-              if(users.get(sc).getState().equals("inside")){
-                message_all_users("LEFT " + users.get(sc).getNickname(), users.get(sc).getRoom());
+              if(words.length == 2){
+                message_user("BYE",sc);
+                if(users.get(sc).getState().equals("inside")){
+                  message_all_users("LEFT " + users.get(sc).getNickname(), users.get(sc).getRoom());
+                }
+                return false;
               }
-              return false;
+              else{
+                message_user("ERROR",sc);
+              }
+            case "/priv":
+              if(words.length == 3){
+                for(SocketChannel tempSC:users.keySet()){
+                  if(users.get(tempSC).getNickname().equals(words[1])){
+                    message_user("PRIVATE " + users.get(sc).getNickname() + " " + words[2],tempSC);
+                    message_user("OK", sc);
+                    return true;
+                  }
+                }
+              }
+              message_user("ERROR", sc);
+              return true;
             default:
               message_user("ERROR",sc);
               return true;
@@ -268,36 +288,10 @@ public class ChatServer
       return checkCommand(sc,input);
     }
 
+    // Decode and print the message to stdout
+    //String message = decoder.decode(buffer).toString();
+    //System.out.print( message );
 
-
-
-
-
-
-
-
-
-    /*
-    Set<SelectionKey> keys = selector.keys();
-    Iterator<SelectionKey> it = keys.iterator();
-    while(it.hasNext()){
-    SelectionKey key = it.next();
-    if(key.isWritable())
-    {
-    System.out.println("I was here!");
-    SocketChannel Temp_Socket = (SocketChannel)key.channel();
-    while(buffer.hasRemaining()){
-    Temp_Socket.write();
+    return true;
   }
-  buffer.rewind();
-}
-}
-*/
-
-// Decode and print the message to stdout
-//String message = decoder.decode(buffer).toString();
-//System.out.print( message );
-
-return true;
-}
 }
